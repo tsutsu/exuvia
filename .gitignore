@@ -1,0 +1,8 @@
+/host_keys
+/_build
+/cover
+/deps
+/doc
+erl_crash.dump
+*.ez
+.DS_Store
