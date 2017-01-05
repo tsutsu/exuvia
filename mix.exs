@@ -1,9 +1,11 @@
 defmodule Exuvia.Mixfile do
   use Mix.Project
 
+  @version File.read!("VERSION")
+
   def project do [
     app: :exuvia,
-    version: "0.1.0",
+    version: @version,
     elixir: "~> 1.4",
     build_embedded: Mix.env == :prod,
     start_permanent: Mix.env == :prod,
