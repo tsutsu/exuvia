@@ -24,7 +24,7 @@ defmodule Exuvia.AuthResponseCache do
     item = %CacheItem{id: item_id, expire_time: expire_time, response: new_response}
     items_set = Map.put(t.items, item_id, item)
 
-    username_index = Map.update(t.by_username, new_response.username, MapSet.new([item_id]), &(Set.put(&1, item_id)))
+    username_index = Map.update(t.by_username, new_response.username, MapSet.new([item_id]), &(MapSet.put(&1, item_id)))
     request_index = Map.put(t.by_request, {new_response.username, new_response.material}, item_id)
 
     %{t | serial: item_id, items: items_set, by_username: username_index, by_request: request_index}
@@ -33,17 +33,17 @@ defmodule Exuvia.AuthResponseCache do
   def delete(%__MODULE__{} = t, item) do
     items_set = Map.delete(t.items, item.id)
 
-    username_index = Map.update(t.by_username, item.response.username, MapSet.new, &(Set.delete(&1, item.response.username)))
+    username_index = Map.update(t.by_username, item.response.username, MapSet.new, &(MapSet.delete(&1, item.response.username)))
     request_index = Map.delete(t.by_request, {item.response.username, item.response.material})
 
     %{t | items: items_set, by_username: username_index, by_request: request_index}
   end
 
   def by_request(%__MODULE__{items: items_set, by_request: request_index} = t, request) do
-    item_id = Dict.get(request_index, request)
+    item_id = Map.get(request_index, request)
 
     if item_id do
-      item = Dict.fetch!(items_set, item_id)
+      item = Map.fetch!(items_set, item_id)
       {t, survived_items} = expire(t, [item])
       survived_resps = Enum.map(survived_items, &(&1.response))
       {t, List.first(survived_resps)}
@@ -53,8 +53,8 @@ defmodule Exuvia.AuthResponseCache do
   end
 
   def all_by_username(%__MODULE__{items: items_set, by_username: username_index} = t, username) do
-    item_ids = Dict.get(username_index, username, [])
-    items = item_ids |> Enum.map(&(Dict.fetch!(items_set, &1)))
+    item_ids = Map.get(username_index, username, [])
+    items = item_ids |> Enum.map(&(Map.fetch!(items_set, &1)))
     {t, survived_items} = expire(t, items)
     survived_resps = Enum.map(survived_items, &(&1.response))
     {t, survived_resps}

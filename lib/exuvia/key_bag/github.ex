@@ -20,7 +20,7 @@ defmodule Exuvia.KeyBag.Github do
       |> Enum.map(&(elem(&1, 0)))
       |> MapSet.new
 
-    if Set.member?(ssh_materials, req_material) do
+    if MapSet.member?(ssh_materials, req_material) do
       authorize(req_username, client)
     else
       {false, 3600}
@@ -30,8 +30,8 @@ defmodule Exuvia.KeyBag.Github do
   defp authorize(req_username, client) do
     req_orgs = Tentacat.Organizations.list(req_username, client) |> Enum.map(&(&1["login"])) |> MapSet.new
     match_orgs = (System.get_env("GITHUB_AUTHORIZED_ORGS") || "") |> String.split(",") |> MapSet.new
-    overlap = Set.intersection(req_orgs, match_orgs)
-    {(Set.size(overlap) > 0), 3600}
+    overlap = MapSet.intersection(req_orgs, match_orgs)
+    {(MapSet.size(overlap) > 0), 3600}
   end
 
   defp query_github_keys_for_user!(github_username, client) do
