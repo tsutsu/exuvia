@@ -16,9 +16,9 @@ defmodule Exuvia.AuthResponseCache do
       n when is_number(n) ->
         :erlang.monotonic_time(:seconds) + n
       :infinity ->
-        # an arbitrary binary. ∀xy(integer(x) < binary(y)), so
-        # a binary taken as a timestamp will never "pass by"
-        "infinity"
+        # An arbitrary atom. `∀xy(integer(x) < atom(y))`, so
+        # an atom taken as a timestamp will never "pass by."
+        :infinity
     end
 
     item = %CacheItem{id: item_id, expire_time: expire_time, response: new_response}
