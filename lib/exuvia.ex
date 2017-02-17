@@ -10,8 +10,8 @@ defmodule Exuvia do
     import Supervisor.Spec, warn: false
 
     children = [
-      worker(Exuvia.Daemon, []),
       worker(Exuvia.KeyBag, []),
+      worker(Exuvia.Daemon, []),
     ]
 
     opts = [

@@ -19,6 +19,11 @@ defmodule Exuvia.KeyBag do
     GenServer.call(__MODULE__, {:authenticate, user, key})
   end
 
+  def system_dir do
+    {:ok, host_key_dir} = GenServer.call(__MODULE__, :get_host_key_dir)
+    host_key_dir
+  end
+
 
   @doc false
   def start do

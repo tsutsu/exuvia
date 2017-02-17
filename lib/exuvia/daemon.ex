@@ -25,6 +25,7 @@ defmodule Exuvia.Daemon do
     max_sessions = Application.get_env(:exuvia, :max_sessions, 25)
 
     ssh_opts = [
+      system_dir: String.to_charlist(Exuvia.KeyBag.system_dir),
       parallel_login: true,
       max_sessions: max_sessions,
       key_cb: Exuvia.KeyBag,
