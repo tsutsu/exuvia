@@ -2,10 +2,22 @@
 
 Exuvia abstracts away everything needed to connect to your Elixir node, via both SSH and the distribution protocol.
 
-One interesting convenience feature Exuvia has is automatic public-key retrieval from Github. Just set these environment variables:
+## Features
+
+### Retrieve public keys and group memberships from Github
+
+As if Github was your LDAP server! Just set these environment variables:
 
 - `GITHUB_ACCESS_TOKEN`
 - `GITHUB_AUTHORIZED_ORGS`
+
+### Static backup password from env
+
+If you fear for your ability to get into a server that relies on a third-party for AAA, you can also set this envrionment variable:
+
+- `SSH_PASSWORD`
+
+Any user will be able to log in using this password. (Not very safe for standard server setups, but quite safe+convenient if your env is handled through Docker Swarm or Kubernetes.)
 
 ## Installation
 
