@@ -15,34 +15,6 @@ defmodule Exuvia.KeyBag do
     validate_key_for_user(:erlang.list_to_binary(user), key)
   end
 
-
-  defp get_host_key(alg) do
-    persistence_type = Application.get_env(:exuvia, :host_key, :ephemeral)
-    pem = get_privkey_pem(persistence_type, alg)
-    material = :public_key.pem_decode(pem) |> List.first |> :public_key.pem_entry_decode
-    {:ok, material}
-  end
-
-  defp get_privkey_pem(:ephemeral, alg), do: generate_privkey_pem!(alg)
-  defp get_privkey_pem({:dir, privkey_dir}, alg) do
-    privkey_path = Path.join(privkey_dir, "ssh_host_#{alg}_key")
-    unless File.exists?(privkey_path) do
-      File.mkdir_p!(privkey_dir)
-      System.cmd("ssh-keygen", ["-q", "-t", alg, "-P", "", "-f", privkey_path])
-    end
-
-    File.read!(privkey_path)
-  end
-
-  defp generate_privkey_pem!(alg) do
-    work_dir = Temp.mkdir!
-    privkey_path = Path.join(work_dir, "ssh_host_#{alg}_key")
-    {_, 0} = System.cmd "ssh-keygen", ["-q", "-t", alg, "-P", "", "-f", privkey_path]
-    pem = File.read!(privkey_path)
-    File.rm_rf!(work_dir)
-    pem
-  end
-
   defp validate_key_for_user(user, key) do
     GenServer.call(__MODULE__, {:authenticate, user, key})
   end
@@ -60,8 +32,16 @@ defmodule Exuvia.KeyBag do
 
   @doc false
   def init(_) do
+    persistence_type = Application.get_env(:exuvia, :host_key, :ephemeral)
+    host_key_dir = ensure_host_key_dir_exists(persistence_type)
+
+    ensure_host_key_exists(host_key_dir, "rsa")
+    ensure_host_key_exists(host_key_dir, "dsa")
+    ensure_host_key_exists(host_key_dir, "ecdsa")
+
     backend = Application.get_env(:exuvia, :auth, Exuvia.KeyBag.Dummy)
-    {:ok, %{backend: backend, cache: Exuvia.AuthResponseCache.new}}
+
+    {:ok, %{backend: backend, cache: Exuvia.AuthResponseCache.new, host_key_dir: host_key_dir}}
   end
 
   def terminate(_reason, _state), do: :ok
@@ -79,5 +59,38 @@ defmodule Exuvia.KeyBag do
       arc = Exuvia.AuthResponseCache.insert(arc, %Exuvia.AuthResponse{username: username, material: material, granted: granted, ttl: ttl})
       {:reply, granted, %{state | cache: arc}}
     end
+  end
+
+  def handle_call(:get_host_key_dir, _, %{host_key_dir: hk_dir} = state) do
+    {:reply, {:ok, hk_dir}, state}
+  end
+
+  defp ensure_host_key_dir_exists({:dir, dir_path}) do
+    case File.stat!(dir_path).access do
+      :none -> raise ArgumentError, "SSH host key directory '#{dir_path}' is inaccessible"
+      _     -> dir_path
+    end
+
+  end
+
+  defp ensure_host_key_dir_exists(:ephemeral) do
+    dir_path = Path.join([:code.priv_dir(:exuvia), "host_keys"])
+    File.mkdir_p!(dir_path)
+    dir_path
+  end
+
+  require Logger
+
+  def ensure_host_key_exists(dir, alg) do
+    key_path = Path.join(dir, "ssh_host_#{alg}_key")
+
+    unless File.exists?(key_path) do
+      File.touch!(key_path)
+      File.rm!(key_path)
+      Logger.info "Creating SSH2 #{String.upcase(alg)} host key at '#{key_path}'"
+      {_, 0} = System.cmd "ssh-keygen", ["-q", "-t", alg, "-N", "", "-f", key_path]
+    end
+
+    File.read!(key_path)
   end
 end
