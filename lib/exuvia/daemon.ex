@@ -24,14 +24,22 @@ defmodule Exuvia.Daemon do
   def init(_) do
     max_sessions = Application.get_env(:exuvia, :max_sessions, 25)
 
-    {:ok, pid} = :ssh.daemon(2022,
-      shell: {IEx, :start, []},
-      auth_methods: 'publickey',
+    ssh_opts = [
       parallel_login: true,
       max_sessions: max_sessions,
       key_cb: Exuvia.KeyBag,
       connectfun: &on_success/3,
-      failfun: &on_failure/3)
+      failfun: &on_failure/3
+    ]
+
+    auth_opts = case System.get_env("SSH_PASSWORD") do
+      pw when is_binary(pw) ->
+        [auth_methods: 'publickey,password', password: String.to_charlist(pw)]
+      nil ->
+        [auth_methods: 'publickey']
+    end
+
+    {:ok, pid} = :ssh.daemon(2022, ssh_opts ++ auth_opts)
 
     Process.link(pid)
 
