@@ -7,12 +7,9 @@ defmodule Exuvia.KeyBag do
 
   @behaviour :ssh_server_key_api
 
-  def host_key(:"ssh-rsa", _), do: get_host_key("rsa")
-  def host_key(:"ssh-dss", _), do: get_host_key("dsa")
-  def host_key(:"ecdsa-sha2-nistp256", _), do: get_host_key("ecdsa")
-  def host_key(:"ecdsa-sha2-nistp384", _), do: get_host_key("ecdsa")
-  def host_key(:"ecdsa-sha2-nistp521", _), do: get_host_key("ecdsa")
-  def host_key(_, _), do: {:error, 'Not implemented!'}
+  def host_key(alg, opts) do
+    :ssh_file.host_key(alg, opts)
+  end
 
   def is_auth_key(key, user, _opts) do
     validate_key_for_user(:erlang.list_to_binary(user), key)
