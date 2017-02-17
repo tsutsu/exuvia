@@ -26,6 +26,7 @@ defmodule Exuvia.Daemon do
 
     ssh_opts = [
       system_dir: String.to_charlist(Exuvia.KeyBag.system_dir),
+      ssh_cli: {:ssh_unicode_cli, [{IEx, :start, []}]},
       parallel_login: true,
       max_sessions: max_sessions,
       key_cb: Exuvia.KeyBag,
