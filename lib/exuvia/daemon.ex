@@ -33,12 +33,15 @@ defmodule Exuvia.Daemon do
       "ssh://*:*@127.0.0.1:2022"
     )
 
+    shell_mod = Application.get_env(:exuvia, :shell_module, Exuvia.Shell)
+
     ssh_opts = [
       system_dir: String.to_charlist(Exuvia.KeyBag.system_dir),
       parallel_login: true,
       shell: fn(user) ->
-        Process.put(:remote_user, to_string(user))
-        IEx.start(prefix: render_ps1(user))
+        user = to_string(user)
+        Process.put(:remote_user, user)
+        shell_mod.start([project: get_project_slug(), user: user])
       end,
       max_sessions: max_sessions,
       key_cb: Exuvia.KeyBag,
@@ -162,18 +165,10 @@ defmodule Exuvia.Daemon do
     end
   end
 
-  defp render_ps1(user) when is_list(user) do
-    IO.ANSI.format([
-      :green, get_project_slug(), :reset,
-      " ",
-      :blue, "~#{user}", :reset
-    ])
-  end
-
   defp get_project_slug do
     if Code.ensure_loaded?(Mix) do
       project = Mix.Project.config
-      [project[:app], project[:version]]
+      {to_string(project[:app]), project[:version]}
     else
       app_module_str = :code.get_path
       |> Enum.map(&to_string/1)
@@ -185,14 +180,10 @@ defmodule Exuvia.Daemon do
       if app_module_str do
         app_module = String.to_existing_atom(app_module_str)
         app_spec = Application.spec(app_module)
-        [app_module, app_spec[:vsn]]
+        {app_module_str, to_string(app_spec[:vsn])}
       else
-        ["unknown"]
+        :unknown
       end
     end
-
-    slug_parts
-    |> Enum.map(&to_string/1)
-    |> Enum.join("-")
   end
 end
