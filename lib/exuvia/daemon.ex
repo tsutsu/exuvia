@@ -171,7 +171,7 @@ defmodule Exuvia.Daemon do
   end
 
   defp get_project_slug do
-    slug_parts = if Code.ensure_loaded?(Exuvia) do
+    if Code.ensure_loaded?(Mix) do
       project = Mix.Project.config
       [project[:app], project[:version]]
     else
