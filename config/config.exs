@@ -3,7 +3,7 @@ use Mix.Config
 # Example usage:
 #
 # config :exuvia,
-#   host_key: {:dir, "/home/walter/exuvia/host_keys"},
-#   auth: Exuvia.KeyBag.Github
+#   accept: "ssh://*:*@localhost:2022",
+#   host_key: {:dir, "/opt/your_elixir_project/priv/ssh"}
 
 []
