@@ -5,5 +5,6 @@ use Mix.Config
 # config :exuvia,
 #   accept: "ssh://*:*@localhost:2022",
 #   host_key: {:dir, "/opt/your_elixir_project/priv/ssh"}
+#   max_sessions: 100,
 
 []
