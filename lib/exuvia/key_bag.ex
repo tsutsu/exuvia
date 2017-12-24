@@ -3,6 +3,8 @@ defmodule Exuvia.KeyBag do
   Authenticates and authorizes public keys with pluggable strategies.
   """
 
+  require Logger
+
   @behaviour :ssh_server_key_api
 
   require Logger
@@ -22,6 +24,10 @@ defmodule Exuvia.KeyBag do
   def system_dir do
     {:ok, host_key_dir} = GenServer.call(__MODULE__, :get_host_key_dir)
     host_key_dir
+  end
+
+  def reset do
+    GenServer.call(__MODULE__, :reset)
   end
 
 
@@ -44,25 +50,37 @@ defmodule Exuvia.KeyBag do
     ensure_host_key_exists(host_key_dir, "dsa")
     ensure_host_key_exists(host_key_dir, "ecdsa")
 
-    backend = Application.get_env(:exuvia, :auth, Exuvia.KeyBag.Dummy)
-
-    {:ok, %{backend: backend, cache: Exuvia.AuthResponseCache.new, host_key_dir: host_key_dir}}
+    {:ok, %{
+      backend_module: nil,
+      backend_state: nil,
+      cache: Exuvia.AuthResponseCache.new,
+      host_key_dir: host_key_dir
+    }}
   end
 
   def terminate(_reason, _state), do: :ok
 
-  def handle_call(:reset, state) do
+  def handle_call(:reset, _from, state) do
     {:reply, :ok, %{state | cache: Exuvia.AuthResponseCache.new}}
   end
 
-  def handle_call({:authenticate, username, material}, _, %{cache: arc, backend: backend} = state) do
+  def handle_call({:authenticate, _, _} = msg, from, %{backend_module: nil} = state) do
+    {backend_module, backend_init_args} = Exuvia.Daemon.publickey_backend()
+    {:ok, backend_state} = backend_module.init(backend_init_args)
+    handle_call(msg, from, %{state |
+      backend_module: backend_module,
+      backend_state: backend_state
+    })
+  end
+
+  def handle_call({:authenticate, username, material}, _, %{cache: arc, backend_module: bmod, backend_state: bstate} = state) do
     {arc, cached_resp} = Exuvia.AuthResponseCache.by_request(arc, {username, material})
     if cached_resp do
       {:reply, cached_resp.granted, %{state | cache: arc}}
     else
-      {granted, ttl} = backend.auth_request(username, material)
+      {granted, ttl, new_bstate} = bmod.auth_request(username, material, bstate)
       arc = Exuvia.AuthResponseCache.insert(arc, %Exuvia.AuthResponse{username: username, material: material, granted: granted, ttl: ttl})
-      {:reply, granted, %{state | cache: arc}}
+      {:reply, granted, %{state | cache: arc, backend_state: new_bstate}}
     end
   end
 
