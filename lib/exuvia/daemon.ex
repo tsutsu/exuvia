@@ -4,7 +4,6 @@ defmodule Exuvia.Daemon do
   """
 
   require Logger
-  alias Logger, as: L
 
   use GenServer
 
@@ -50,13 +49,13 @@ defmodule Exuvia.Daemon do
 
 
   defp on_success(username, _address, method) do
-    L.info fn ->
+    Logger.info fn ->
       ["Authenticated ", IO.ANSI.format([:blue, username]), " (", method, ")"]
     end
   end
 
   defp on_failure(username, address, reason) do
-    L.warn fn ->
+    Logger.warn fn ->
       ip = :inet.ntoa(address)
       ["Connection failed from ", IO.ANSI.format([:blue, username, "@", ip]), ": ", inspect(reason)]
     end

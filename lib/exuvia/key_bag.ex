@@ -1,11 +1,11 @@
-require Logger
-
 defmodule Exuvia.KeyBag do
   @moduledoc ~S"""
   Authenticates and authorizes public keys with pluggable strategies.
   """
 
   @behaviour :ssh_server_key_api
+
+  require Logger
 
   def host_key(alg, opts) do
     :ssh_file.host_key(alg, opts)
@@ -83,8 +83,6 @@ defmodule Exuvia.KeyBag do
     File.mkdir_p!(dir_path)
     dir_path
   end
-
-  require Logger
 
   def ensure_host_key_exists(dir, alg) do
     key_path = Path.join(dir, "ssh_host_#{alg}_key")

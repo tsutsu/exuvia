@@ -1,5 +1,3 @@
-require Logger
-
 defmodule Exuvia.KeyBag.Github do
   @moduledoc ~S"""
   A strategy for authenticating SSH keys against a Github user's public keys
