@@ -11,7 +11,8 @@ defmodule Exuvia do
 
     children = [
       worker(Exuvia.KeyBag, []),
-      worker(Exuvia.Daemon, []),
+      worker(Exuvia.SessionCounter, []),
+      worker(Exuvia.Daemon, [])
     ]
 
     opts = [

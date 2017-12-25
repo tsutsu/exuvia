@@ -38,15 +38,20 @@ defmodule Exuvia.Daemon do
     ssh_opts = [
       system_dir: String.to_charlist(Exuvia.KeyBag.system_dir),
       parallel_login: true,
-      shell: fn(user) ->
-        user = to_string(user)
-        Process.put(:remote_user, user)
-        shell_mod.start([project: get_project_slug(), user: user])
+      shell: fn(username) ->
+        new_session_id = make_session_id(username)
+        Process.put(:ssh_session_id, new_session_id)
+        shell_mod.start([project: get_project_slug(), session_id: new_session_id])
       end,
       max_sessions: max_sessions,
       key_cb: Exuvia.KeyBag,
       connectfun: &on_success/3,
+      disconnectfun: &on_disconnect/1,
       failfun: &on_failure/3,
+      ssh_msg_debug_fun: fn
+        (_, false, msg, _) -> Logger.debug(msg)
+        (_, true, msg, _) -> Logger.info(msg)
+      end
     ] ++ parse_userinfo(bindspec)
 
     {pkb, ssh_opts} = Keyword.pop(ssh_opts, :publickey_backend, {Exuvia.KeyBag.Dummy, [allow: :always]})
@@ -152,9 +157,19 @@ defmodule Exuvia.Daemon do
     [auth_methods: auth_methods_enabled] ++ auth_opts
   end
 
+
+  defp on_disconnect(_reason) do
+    username = Process.get(:remote_user)
+    Logger.info(fn -> IO.ANSI.format([
+      Exuvia.Shell.format_remote_user(username), " disconnected"
+    ]) end)
+  end
+
   defp on_success(username, _address, method) do
+    Process.put(:remote_user, username)
+
     Logger.info fn ->
-      ["Authenticated ", IO.ANSI.format([:blue, username]), " (", method, ")"]
+      [Exuvia.Shell.format_remote_user(username), " connected (", method, ")"]
     end
   end
 
@@ -163,6 +178,11 @@ defmodule Exuvia.Daemon do
       ip = :inet.ntoa(address)
       ["Connection failed from ", IO.ANSI.format([:blue, username, "@", ip]), ": ", inspect(reason)]
     end
+  end
+
+
+  defp make_session_id(username) do
+    {Exuvia.SessionCounter.take_next(), to_string(username)}
   end
 
   defp get_project_slug do

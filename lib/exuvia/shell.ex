@@ -1,19 +1,30 @@
 defmodule Exuvia.Shell do
   def start(opts) when is_list(opts), do: start(Enum.into(opts, %{}))
-  def start(%{project: project_slug, user: remote_user}) do
-    IEx.start(prefix: render_ps1(project_slug, remote_user))
+  def start(%{project: project_slug, session_id: session_id}) do
+    IEx.start(prefix: render_ps1(project_slug, session_id))
   end
 
-  defp render_ps1({project_name, version}, remote_user) do
-    IO.ANSI.format([
-      :green, project_name, "-", version, :reset,
-      " ",
-      :blue, :italic, "~#{remote_user}", :reset
-    ])
+  defp render_ps1(project_slug, session_id) do
+    parts = [
+      format_project_slug(project_slug),
+      format_session_id(session_id)
+    ]
+    parts |> Enum.filter(&(&1)) |> Enum.join(" ")
   end
-  defp render_ps1(:unknown, remote_user) do
-    IO.ANSI.format([
-      :blue, :italic, "~#{remote_user}", :reset
-    ])
+
+  def format_project_slug(nil), do: []
+  def format_project_slug({project_name, version}) do
+    IO.ANSI.format([:green, project_name, "-", version])
+  end
+
+  def format_session_id({session_counter, remote_user}) do
+    [
+      format_remote_user(remote_user),
+      IO.ANSI.format([:blue, ":", to_string(session_counter)])
+    ]
+  end
+
+  def format_remote_user(username) do
+    IO.ANSI.format([:blue, :italic, "~", username])
   end
 end
