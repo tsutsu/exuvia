@@ -190,6 +190,8 @@ defmodule Exuvia.Daemon do
       |> List.first
       |> Path.dirname
       |> Path.basename
+      |> String.split("-")
+      |> List.first
 
       if app_module_str do
         app_module = String.to_existing_atom(app_module_str)
