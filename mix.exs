@@ -20,7 +20,7 @@ defmodule Exuvia.Mixfile do
 
   defp package, do: [
     name: :exuvia,
-    files: ["lib", "config", "mix.exs", "VERSION", "README.md", "LICENSE"],
+    files: ["lib", "config", "mix.exs", "README.md", "LICENSE"],
     maintainers: ["Levi Aul"],
     licenses: ["BSD"],
     links: %{"GitHub" => "https://github.com/tsutsu/exuvia"}
