@@ -84,7 +84,7 @@ And don't worry: the responses from GitHub are cached, so frequent visits by SSH
 
   ```elixir
   def deps, do: [
-    {:exuvia, "~> 0.2.3"}
+    {:exuvia, "~> 0.2.4"}
   ]
   ```
 
