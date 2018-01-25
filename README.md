@@ -6,51 +6,57 @@ Exuvia runs an Erlang-native SSH daemon and automatically handles authentication
 
 ![An Exuvia connection to a node on the same machine](/../screenshots/local_connection.png?raw=true)
 
-## Minimal configuration
+## Bind+accept Configuration
 
-Exuvia is configured entirely by setting a single environment variable, `$EXUVIA_ACCEPT`; or by setting the single app-env variable:
+Exuvia's listener is configured (almost) entirely by setting a single app-env variable:
 
+```elixir
+  config :exuvia, :accept, "ssh://..."
 ```
-  config :exuvia, :accept, "..."
+
+The value of `:accept` is a URI string that represents both the `bind(3)` arguments for the SSH daemon listener (the host and port parts), and your choice of authentication/authorization strategy (in the schema, username, and password parts.) In most cases, it's the same URI you'd have to use, as a client, to connect!
+
+If you don't set the value for `:accept`, the default value is `"ssh://*:*@localhost:2022"`. This will start a listener on only the loopback interface, on port 2022, and will authorize any user passing any password/key.
+
+Exuvia uses [Confex](https://github.com/Nebo15/confex) for configuration, so you can also set `:accept` (or any of Exuvia's other options) using an OS environment variable, like so:
+
+```elixir
+  config :exuvia, {:system, "EXUVIA_ACCEPT"}
 ```
 
-The value of both of these is a pseudo-URI, that represents both the `bind(3)` arguments for the SSH daemon listener, and the authentication/authorization configuration. In most cases, it's the same URI you'd have to use, as a client, to connect!
-
-If you don't set the value at all, the default value is `"ssh://*:*@localhost:2022"`. This will start a listener on only the loopback interface, on port 2022, and will authorize any user passing any password/key.
-
-## `$EXUVIA_ACCEPT` Examples
+### `:accept`-string Cookbook
 
 An OpenSSH-like public SSH server that depends on the filesystem (i.e. the host must have `/home/$user/.ssh/authorized_keys` files):
 
-```
-export EXUVIA_ACCEPT='ssh://0.0.0.0:2022'
+```elixir
+  config :exuvia, :accept, "ssh://0.0.0.0:2022"
 ```
 
 An SSH server with a single, global password, and no public-key authentication:
 
-```
-export EXUVIA_ACCEPT='ssh://*:hunter2@localhost:2022'
+```elixir
+  config :exuvia, :accept, "ssh://*:hunter2@localhost:2022"
 ```
 
 An OpenSSH-behaving server, that only allows one particular user to authenticate, and relies on PKI (no password option):
 
-```
-export EXUVIA_ACCEPT='ssh://bob@localhost:2022'
+```elixir
+  config :exuvia, :accept, "ssh://bob@localhost:2022"
 ```
 
 An OpenSSH-behaving server, that only allows *the user the Erlang-node runs as* to authenticate, and only via PKI:
 
-```
-export EXUVIA_ACCEPT='ssh://$USER@localhost:2022'
+```elixir
+  config :exuvia, :accept, "ssh://$USER@localhost:2022"
 ```
 
 A server that binds to a new ephemeral port on each node boot (important if you're running multiple instances of your node at once):
 
-```
-export EXUVIA_ACCEPT='ssh://localhost:0'
+```elixir
+  config :exuvia, :accept, "ssh://localhost:0"
 ```
 
-## GitHub authentication!
+### GitHub authentication!
 
 Rather than managing keys on your Erlang node host—or managing an LDAP/Kerberos server or whatever else—Exuvia allows you to use GitHub as an LDAP-like server. (GitHub does have a public API for retrieving people's public SSH keys, after all.)
 
@@ -58,8 +64,8 @@ This is the best thing since sliced bread if you're a small devops team (like mo
 
 Here's the magic:
 
-```
-export EXUVIA_ACCEPT='github+ssh://org1,org2:mytoken@0.0.0.0:2022'
+```elixir
+  config :exuvia, :accept, "github+ssh://org1,org2:mytoken@0.0.0.0:2022"
 ```
 
 This line configures Exuvia to connect to GitHub using a GitHub access token—`mytoken` above—and ask it two questions about each connecting user:
@@ -82,14 +88,28 @@ And don't worry: the responses from GitHub are cached, so frequent visits by SSH
   ]
   ```
 
-  2. Set the `$EXUVIA_ACCEPT` environment variable, or add the app-env var to your `config.exs`.
+  2. Add a `config :exuvia, accept: "..."` line to your `config.exs`.
 
-(My own preferred setup is to put the environment variable in a [direnv](https://direnv.net) `.envrc` file during development, and then, in production, to make the environment variable a Kubernetes secret attached to the deployment.)
-
-#### Ecosystem preparation for the GitHub authentication strategy
+#### Additional setup for using the GitHub authentication strategy
 
 1. [Create a GitHub personal access token](https://help.github.com/articles/creating-a-personal-access-token-for-the-command-line/). The token's owner should be a user with the right to view the organization's member list.
 
 2. Ensure, for each GitHub user that should be able to connect, that [their visibility within your GitHub organization is set to public](https://help.github.com/articles/publicizing-or-hiding-organization-membership/). Users with private visibility don't appear in the organization's members list.
 
 3. Ensure your users [have their up-to-date SSH keys registered with GitHub](https://help.github.com/articles/adding-a-new-ssh-key-to-your-github-account/).
+
+## Other Configuration
+
+* `:host_keys_path` (optional): a directory containing pre-existing SSH host keys for the SSH daemon to use. E.g.
+
+  ```elixir
+    config :exuvia, host_keys_path: "/opt/your_elixir_project/priv/ssh"
+  ```
+
+  If this value is not set, a directory will be created under `deps/exuvia/priv` and new keys will be auto-generated there.
+
+  **NOTE**: If you're using Elixir in Docker, I would heavily suggest creating a persistent `ssh-host-keys` volume and configuring Exuvia to use it. Otherwise, your SSH clients will likely spit out `known-hosts`-file mismatch errors.
+
+* `:max_sessions` (optional): the number of simultaneous SSH connections. Defaults to 25.
+
+* `:shell_module` (optional): a module possessing a function `start/1`, which will get called to create a shell upon successful connections. Look at [lib/exuvia/shell.ex](https://github.com/tsutsu/exuvia/blob/master/lib/exuvia/shell.ex) for an example.

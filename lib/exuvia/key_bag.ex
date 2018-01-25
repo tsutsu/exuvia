@@ -43,7 +43,11 @@ defmodule Exuvia.KeyBag do
 
   @doc false
   def init(_) do
-    persistence_type = Application.get_env(:exuvia, :host_key, :ephemeral)
+    persistence_type = case Confex.get_env(:exuvia, :host_keys_path) do
+      path when is_binary(path) -> {:dir, path}
+      nil                       -> :ephemeral
+    end
+
     host_key_dir = ensure_host_key_dir_exists(persistence_type)
 
     ensure_host_key_exists(host_key_dir, "rsa")

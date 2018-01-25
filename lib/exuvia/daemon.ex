@@ -25,15 +25,9 @@ defmodule Exuvia.Daemon do
 
   @doc false
   def init(_) do
-    max_sessions = Application.get_env(:exuvia, :max_sessions, 25)
-
-    bindspec = URI.parse(
-      System.get_env("EXUVIA_ACCEPT") ||
-      Application.get_env(:exuvia, :accept) ||
-      "ssh://*:*@127.0.0.1:2022"
-    )
-
-    shell_mod = Application.get_env(:exuvia, :shell_module, Exuvia.Shell)
+    bindspec = URI.parse(Confex.get_env(:exuvia, :accept, "ssh://*:*@127.0.0.1:2022"))
+    max_sessions = Confex.get_env(:exuvia, :max_sessions, 25)
+    shell_mod = Confex.get_env(:exuvia, :shell_module, Exuvia.Shell)
 
     ssh_opts = [
       system_dir: String.to_charlist(Exuvia.KeyBag.system_dir),

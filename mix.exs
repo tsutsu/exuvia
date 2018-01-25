@@ -34,6 +34,7 @@ defmodule Exuvia.Mixfile do
   defp deps, do: [
     {:temp, "~> 0.4.3"},
     {:tentacat, "~> 0.7.2"},
+    {:confex, "~> 3.3"},
     {:ex_doc, ">= 0.0.0", only: :dev}
   ]
 end
