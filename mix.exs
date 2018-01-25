@@ -1,7 +1,7 @@
 defmodule Exuvia.Mixfile do
   use Mix.Project
 
-  @version File.read!("VERSION") |> String.trim
+  @version "0.2.2"
 
   def project, do: [
     app: :exuvia,
@@ -35,6 +35,7 @@ defmodule Exuvia.Mixfile do
     {:temp, "~> 0.4.3"},
     {:tentacat, "~> 0.7.2"},
     {:confex, "~> 3.3"},
-    {:ex_doc, ">= 0.0.0", only: :dev}
+    {:ex_doc, ">= 0.0.0", only: :dev},
+    {:version_tasks, "~> 0.10.29", only: :dev}
   ]
 end
