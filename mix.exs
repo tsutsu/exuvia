@@ -37,10 +37,10 @@ defmodule Exuvia.Mixfile do
 
   defp deps,
     do: [
-      {:temp, "~> 0.4.0"},
-      {:tentacat, "~> 0.7.2"},
-      {:confex, "~> 3.3"},
+      {:temp, "~> 0.4"},
+      {:tentacat, "~> 1.2"},
+      {:confex, "~> 3.4"},
       {:ex_doc, ">= 0.0.0", only: :dev},
-      {:version_tasks, "~> 0.10.29", only: :dev}
+      {:version_tasks, "~> 0.11", only: :dev}
     ]
 end
