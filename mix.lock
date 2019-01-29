@@ -12,7 +12,7 @@
   "metrics": {:hex, :metrics, "1.0.1", "25f094dea2cda98213cecc3aeff09e940299d950904393b2a29d191c346a8486", [:rebar3], [], "hexpm"},
   "mimerl": {:hex, :mimerl, "1.0.2", "993f9b0e084083405ed8252b99460c4f0563e41729ab42d9074fd5e52439be88", [:rebar3], [], "hexpm"},
   "ssl_verify_fun": {:hex, :ssl_verify_fun, "1.1.1", "28a4d65b7f59893bc2c7de786dec1e1555bd742d336043fe644ae956c3497fbe", [:make, :rebar], [], "hexpm"},
-  "temp": {:hex, :temp, "0.4.3", "b641c3ce46094839bff110fdb64162536d640d9d47ca2c37add9104a2fa3bd81", [:mix], [], "hexpm"},
+  "temp": {:hex, :temp, "0.4.7", "2c78482cc2294020a4bc0c95950b907ff386523367d4e63308a252feffbea9f2", [:mix], [], "hexpm"},
   "tentacat": {:hex, :tentacat, "0.7.2", "2e31f5052ba6ce0be861ae9c0cc09c37962022ec76541c5ec7a859fc56cf6dbc", [:mix], [{:exjsx, "~> 3.2", [hex: :exjsx, repo: "hexpm", optional: false]}, {:httpoison, "~> 0.8", [hex: :httpoison, repo: "hexpm", optional: false]}], "hexpm"},
   "unicode_util_compat": {:hex, :unicode_util_compat, "0.3.1", "a1f612a7b512638634a603c8f401892afbf99b8ce93a45041f8aaca99cadb85e", [:rebar3], [], "hexpm"},
   "version_tasks": {:hex, :version_tasks, "0.10.29", "734450fd2a7ecaf5cac9aa522b79800de38a116b03494214326edd82b08c00d1", [:mix], [{:git_cli, "~> 0.2", [hex: :git_cli, repo: "hexpm", optional: false]}], "hexpm"},
