@@ -1,7 +1,12 @@
 defmodule Exuvia.Shell do
   def start(opts) when is_list(opts), do: start(Enum.into(opts, %{}))
+
   def start(%{project: project_slug, session_id: session_id}) do
-    IEx.start(prefix: render_ps1(project_slug, session_id))
+    prefix =
+      project_slug
+      |> render_ps1(session_id)
+
+    IEx.start(prefix: prefix)
   end
 
   defp render_ps1(project_slug, session_id) do
@@ -9,10 +14,12 @@ defmodule Exuvia.Shell do
       format_project_slug(project_slug),
       format_session_id(session_id)
     ]
-    parts |> Enum.filter(&(&1)) |> Enum.join(" ")
+
+    parts |> Enum.filter(& &1) |> Enum.join(" ")
   end
 
   def format_project_slug(nil), do: []
+
   def format_project_slug({project_name, version}) do
     IO.ANSI.format([:green, project_name, "-", version])
   end
