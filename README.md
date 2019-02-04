@@ -65,7 +65,7 @@ This is the best thing since sliced bread if you're a small devops team (like mo
 Here's the magic:
 
 ```elixir
-  config :exuvia, :accept, "github+ssh://org1,org2:mytoken@0.0.0.0:2022"
+  config :exuvia, :accept, "github+ssh://org1%2Fteam1,org1%2F/team2,org2:mytoken@0.0.0.0:2022"
 ```
 
 This line configures Exuvia to connect to GitHub using a GitHub access token—`mytoken` above—and ask it two questions about each connecting user:
