@@ -24,7 +24,11 @@ defmodule Exuvia.Daemon do
 
   @doc false
   def init(_) do
-    bindspec = URI.parse(Confex.get_env(:exuvia, :accept, "ssh://*:*@127.0.0.1:2022"))
+    accept =
+      :exuvia
+      |> Confex.get_env(:accept, "ssh://*:*@127.0.0.1:2022")
+
+    bindspec = URI.parse(accept)
     max_sessions = Confex.get_env(:exuvia, :max_sessions, 25)
     shell_mod = Confex.get_env(:exuvia, :shell_module, Exuvia.Shell)
 
@@ -160,16 +164,8 @@ defmodule Exuvia.Daemon do
         {"ssh", [user, password]} ->
           [user_passwords: [{String.to_charlist(user), String.to_charlist(password)}]]
 
-        {"github+ssh", [orgs, token]} when is_binary(orgs) and is_binary(token) ->
-          [
-            publickey_backend:
-              {Exuvia.KeyBag.Github,
-               [
-                 allowed_organizations: String.split(orgs, ","),
-                 access_token: token
-               ]},
-            password: String.to_charlist(token)
-          ]
+        {"github+ssh", args} ->
+          Exuvia.KeyBag.Github.auth_opts(args)
       end
 
     auth_opts_keys = auth_opts |> Keyword.keys() |> MapSet.new()
@@ -226,7 +222,7 @@ defmodule Exuvia.Daemon do
       if Mix.Project.umbrella?() do
         nil
       else
-        {project[:app], project[:version] || "UNRELEASED"}
+        {to_string(project[:app]), project[:version] || "UNRELEASED"}
       end
     else
       app_module_str =

@@ -38,7 +38,7 @@ defmodule Exuvia.Mixfile do
   defp deps,
     do: [
       {:temp, "~> 0.4"},
-      # {:tentacat, "~> 1.2"},
+      {:ghauth, github: "tableturn/ghauth"},
       {:confex, "~> 3.4"},
       {:ex_doc, ">= 0.0.0", only: :dev},
       {:version_tasks, "~> 0.11", only: :dev}

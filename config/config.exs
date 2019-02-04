@@ -8,4 +8,5 @@ use Mix.Config
 #   max_sessions: 100,
 #   shell_module: Exuvia.Shell
 
-[]
+config :exuvia,
+  accept: {:system, "EXUVIA_ACCEPT", "ssh://*:*@localhost:2022"}
