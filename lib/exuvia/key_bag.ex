@@ -30,7 +30,6 @@ defmodule Exuvia.KeyBag do
     GenServer.call(__MODULE__, :reset)
   end
 
-
   @doc false
   def start do
     GenServer.start(__MODULE__, nil, name: __MODULE__)
@@ -43,47 +42,61 @@ defmodule Exuvia.KeyBag do
 
   @doc false
   def init(_) do
-    persistence_type = case Confex.get_env(:exuvia, :host_keys_path) do
-      path when is_binary(path) -> {:dir, path}
-      nil                       -> :ephemeral
-    end
+    persistence_type =
+      case Confex.get_env(:exuvia, :host_keys_path) do
+        path when is_binary(path) -> {:dir, path}
+        nil -> :ephemeral
+      end
 
     host_key_dir = ensure_host_key_dir_exists(persistence_type)
 
     ensure_host_key_exists(host_key_dir, "rsa")
     ensure_host_key_exists(host_key_dir, "dsa")
     ensure_host_key_exists(host_key_dir, "ecdsa")
+    ensure_host_key_exists(host_key_dir, "ed25519")
 
-    {:ok, %{
-      backend_module: nil,
-      backend_state: nil,
-      cache: Exuvia.AuthResponseCache.new,
-      host_key_dir: host_key_dir
-    }}
+    {:ok,
+     %{
+       backend_module: nil,
+       backend_state: nil,
+       cache: Exuvia.AuthResponseCache.new(),
+       host_key_dir: host_key_dir
+     }}
   end
 
   def terminate(_reason, _state), do: :ok
 
   def handle_call(:reset, _from, state) do
-    {:reply, :ok, %{state | cache: Exuvia.AuthResponseCache.new}}
+    {:reply, :ok, %{state | cache: Exuvia.AuthResponseCache.new()}}
   end
 
   def handle_call({:authenticate, _, _} = msg, from, %{backend_module: nil} = state) do
     {backend_module, backend_init_args} = Exuvia.Daemon.publickey_backend()
     {:ok, backend_state} = backend_module.init(backend_init_args)
-    handle_call(msg, from, %{state |
-      backend_module: backend_module,
-      backend_state: backend_state
-    })
+
+    handle_call(msg, from, %{state | backend_module: backend_module, backend_state: backend_state})
   end
 
-  def handle_call({:authenticate, username, material}, _, %{cache: arc, backend_module: bmod, backend_state: bstate} = state) do
+  def handle_call(
+        {:authenticate, username, material},
+        _,
+        %{cache: arc, backend_module: bmod, backend_state: bstate} = state
+      ) do
     {arc, cached_resp} = Exuvia.AuthResponseCache.by_request(arc, {username, material})
+
     if cached_resp do
       {:reply, cached_resp.granted, %{state | cache: arc}}
     else
       {granted, ttl, new_bstate} = bmod.auth_request(username, material, bstate)
-      arc = Exuvia.AuthResponseCache.insert(arc, %Exuvia.AuthResponse{username: username, material: material, granted: granted, ttl: ttl})
+
+      arc =
+        Exuvia.AuthResponseCache.insert(arc, %Exuvia.AuthResponse{
+          username: username,
+          material: material,
+          granted: granted,
+          ttl: ttl
+        })
+
       {:reply, granted, %{state | cache: arc, backend_state: new_bstate}}
     end
   end
@@ -95,9 +108,8 @@ defmodule Exuvia.KeyBag do
   defp ensure_host_key_dir_exists({:dir, dir_path}) do
     case File.stat!(dir_path).access do
       :none -> raise ArgumentError, "SSH host key directory '#{dir_path}' is inaccessible"
-      _     -> dir_path
+      _ -> dir_path
     end
-
   end
 
   defp ensure_host_key_dir_exists(:ephemeral) do
@@ -112,8 +124,8 @@ defmodule Exuvia.KeyBag do
     unless File.exists?(key_path) do
       File.touch!(key_path)
       File.rm!(key_path)
-      Logger.info "Creating SSH2 #{String.upcase(alg)} host key at '#{key_path}'"
-      {_, 0} = System.cmd "ssh-keygen", ["-q", "-t", alg, "-N", "", "-f", key_path]
+      Logger.info("Creating SSH2 #{String.upcase(alg)} host key at '#{key_path}'")
+      {_, 0} = System.cmd("ssh-keygen", ["-q", "-t", alg, "-N", "", "-f", key_path])
     end
 
     File.read!(key_path)

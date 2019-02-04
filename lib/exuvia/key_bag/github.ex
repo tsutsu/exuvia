@@ -5,40 +5,35 @@ defmodule Exuvia.KeyBag.Github do
 
   require Logger
 
-  defstruct allowed_organizations: MapSet.new, client: nil
+  defstruct acl: nil, client: nil
 
-  def init(opts) when is_list(opts), do: init(Enum.into(opts, %{}))
-  def init(%{allowed_organizations: orgs, access_token: token}) when is_binary(token) and byte_size(token) == 40 do
-    {:ok, %__MODULE__{
-      allowed_organizations: MapSet.new(orgs),
-      client: Tentacat.Client.new(%{access_token: token})
-    }}
+  def auth_opts([orgs, token])
+      when is_binary(orgs) and is_binary(token) and byte_size(token) == 40 do
+    pubkey_opts = %__MODULE__{
+      acl: orgs |> URI.decode() |> Ghauth.acl(),
+      client: Ghauth.Client.new(%{access_token: token})
+    }
+
+    [
+      publickey_backend: {__MODULE__, pubkey_opts},
+      password: String.to_charlist(token)
+    ]
+  end
+
+  def init(%__MODULE__{} = s) do
+    {:ok, s}
   end
 
   def auth_request(req_username, req_material, %__MODULE__{client: client} = state) do
-    match_materials =
-      Tentacat.Users.Keys.list(req_username, client)
-      |> Enum.map(&(&1["key"]))
-      |> Enum.join("\n")
-      |> :public_key.ssh_decode(:public_key)
-      |> Enum.map(&(elem(&1, 0)))
-      |> MapSet.new
-
-    if MapSet.member?(match_materials, req_material) do
+    if Ghauth.match_key?(req_username, req_material, client) do
       authorize(req_username, state)
     else
       {false, 3600, state}
     end
   end
 
-  defp authorize(req_username, %__MODULE__{client: client, allowed_organizations: match_orgs} = state) do
-    req_orgs =
-      Tentacat.Organizations.list(req_username, client)
-      |> Enum.map(&(&1["login"]))
-      |> MapSet.new
-
-    overlap = MapSet.intersection(req_orgs, match_orgs)
-
-    {(MapSet.size(overlap) > 0), 3600, state}
+  defp authorize(req_username, %__MODULE__{} = state) do
+    match = Ghauth.match?(req_username, state.acl, state.client)
+    {match, 3600, state}
   end
 end
